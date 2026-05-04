@@ -99,7 +99,7 @@ function HistoricalTableCard({ title, rows }: { title: string; rows: HistoricalR
             <col />
             <col style={{ width: "64px" }} />
           </colgroup>
-          <thead className="bg-dodger-blue text-white">
+          <thead className="bg-dodger-blue text-[#0f172a]">
             <tr>
               <th className="px-2 py-2 text-center font-semibold">Rank</th>
               <th className="px-2 py-2 text-center font-semibold">Movie</th>
@@ -110,7 +110,7 @@ function HistoricalTableCard({ title, rows }: { title: string; rows: HistoricalR
             {rows.map((row, i) => (
               <tr
                 key={`${title}-${row.rank}`}
-                className={i % 2 === 0 ? "bg-dodger-blue-light/30" : "bg-white"}
+                className={i % 2 === 0 ? "bg-[#f8fafc]" : "bg-white"}
               >
                 <td className="border-t border-dodger-blue-light/60 px-2 py-1.5 text-center tabular-nums text-dodger-blue-dark">
                   {row.rank}
@@ -253,7 +253,7 @@ export default async function Home() {
                   href="/2025-scoresheet.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-dodger-blue underline-offset-2 hover:underline"
+                  className="link-inline-body"
                 >
                   linked below
                 </a>
@@ -297,14 +297,14 @@ export default async function Home() {
                 href="https://www.firstshowing.net/schedule2026/#may"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-dodger-blue underline-offset-2 hover:underline"
+                className="link-inline-body"
               >
                 release calendar
               </a>
               . I&apos;ve put all the possible selections in a{" "}
               <Link
                 href="/movies"
-                className="font-semibold text-dodger-blue underline-offset-2 hover:underline"
+                className="link-inline-body"
               >
                 list for you
               </Link>
@@ -504,7 +504,7 @@ export default async function Home() {
                   <col className="w-[9rem]" />
                   <col className="w-[8.5rem]" />
                 </colgroup>
-                <thead className="bg-dodger-blue text-white">
+                <thead className="bg-dodger-blue text-[#0f172a]">
                   <tr>
                     <th className="px-3 py-1.5 text-left font-semibold">Title</th>
                     <th className="whitespace-nowrap px-3 py-1.5 text-left font-semibold">Release Date</th>
@@ -514,7 +514,7 @@ export default async function Home() {
                 </thead>
                 <tbody>
                   {sortedMovies.map((movie, index) => (
-                    <tr key={movie.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                    <tr key={movie.id} className={index % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"}>
                       <td className="border-t border-dodger-blue-light px-3 py-1.5 font-medium text-dodger-blue-dark">
                         {movie.title}
                       </td>
@@ -549,7 +549,7 @@ export default async function Home() {
                   {standings.map((row, index) => (
                     <tr
                       key={row.player_id || `${row.player_name}-${index}`}
-                      className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                      className={index % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"}
                     >
                       <td className="border-t border-dodger-red/20 px-3 py-1.5 font-semibold tabular-nums text-dodger-red">
                         {index + 1}
@@ -613,7 +613,7 @@ export default async function Home() {
                   <div className="border-t border-dodger-blue-light p-3">
                     <div className="overflow-x-auto">
                       <table className="min-w-full text-xs">
-                        <thead className="bg-dodger-blue text-white">
+                        <thead className="bg-dodger-blue text-[#0f172a]">
                           <tr>
                             <th className="px-3 py-1.5 text-left font-semibold">Rank</th>
                             <th className="px-3 py-1.5 text-left font-semibold">Movie</th>
@@ -640,7 +640,7 @@ export default async function Home() {
                             return (
                               <tr
                                 key={`${player.id}-${pick.movie_id}-${String(pick.displayRank)}`}
-                                className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                                className={index % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"}
                               >
                                 <td className="border-t border-dodger-blue-light px-3 py-1.5 font-semibold tabular-nums">
                                   {pick.displayRank}

@@ -24,3 +24,16 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Inline links in main body copy (not header nav or large CTAs). */
+main a.link-inline-body {
+  color: #547b68;
+  font-weight: 600;
+  text-underline-offset: 2px;
+  text-decoration: none;
+}
+
+main a.link-inline-body:hover {
+  color: #39646e;
+  text-decoration: underline;
+}

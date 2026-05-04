@@ -1034,7 +1034,7 @@ export function SubmitForm({ movies }: SubmitFormProps) {
         <button
           type="button"
           onClick={handleClearDraft}
-          className="mt-2 text-xs font-medium text-dodger-blue underline-offset-2 hover:underline"
+          className="link-inline-body mt-2 text-xs font-medium"
         >
           Clear draft
         </button>

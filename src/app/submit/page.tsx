@@ -38,7 +38,7 @@ export default async function SubmitPage() {
         <div className="mx-auto mb-3 w-full max-w-6xl">
           <Link
             href="/"
-            className="inline-flex text-sm font-medium text-dodger-blue underline-offset-2 hover:underline"
+            className="link-inline-body inline-flex text-sm font-medium"
           >
             ← Back to home
           </Link>
@@ -52,7 +52,7 @@ export default async function SubmitPage() {
         <div className="mx-auto mb-3 w-full max-w-6xl">
           <Link
             href="/"
-            className="inline-flex text-sm font-medium text-dodger-blue underline-offset-2 hover:underline"
+            className="link-inline-body inline-flex text-sm font-medium"
           >
             ← Back to home
           </Link>
