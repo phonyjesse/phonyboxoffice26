@@ -190,7 +190,10 @@ export async function submitPicksAction(
 
     return {
       status: "error",
-      message: error instanceof Error ? error.message : "Failed to submit picks.",
+      message:
+        error instanceof Error
+          ? `Failed to submit picks: ${error.message}`
+          : "Failed to submit picks.",
     };
   }
 }
@@ -254,7 +257,10 @@ export async function loadExistingPicksAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Failed to load existing picks.",
+      error:
+        error instanceof Error
+          ? `Failed to load existing picks: ${error.message}`
+          : "Failed to load existing picks.",
     };
   }
 }
