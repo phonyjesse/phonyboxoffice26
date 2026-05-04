@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://phony.fun"),
   title: "Phony Box Office Game",
   description:
     "Predict the top 15 movies of the Summer 2026 box office. Submissions close May 21, 2026.",
