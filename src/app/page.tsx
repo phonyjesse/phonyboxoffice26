@@ -575,13 +575,13 @@ export default async function Home() {
               ];
 
               return (
-                <details
+                <div
                   key={`${player.id}-details`}
                   className="rounded border border-dodger-blue-dark/15 bg-white"
                 >
-                  <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-dodger-blue-dark">
+                  <div className="px-3 py-2 text-sm font-medium text-dodger-blue-dark">
                     {playerName} · {formatScore(totalScore)}
-                  </summary>
+                  </div>
                   <div className="border-t border-dodger-blue-light p-3">
                     <div className="overflow-x-auto">
                       <table className="min-w-full text-xs">
@@ -641,7 +641,7 @@ export default async function Home() {
                       </table>
                     </div>
                   </div>
-                </details>
+                </div>
               );
             })}
           </div>
