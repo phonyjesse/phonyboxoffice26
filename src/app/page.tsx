@@ -141,6 +141,7 @@ type MovieRow = {
   title: string;
   release_date: string;
   opening_weekend_gross: number | null;
+  total_gross_millions: number | null;
   status: string | null;
   poster_url: string | null;
 };
@@ -152,15 +153,6 @@ type PickWithMovieRow = {
   is_alternate: boolean | null;
   movies: { title: string; status: string | null } | null;
 };
-
-type WeeklyGrossRow = {
-  movie_id: string;
-  week_number: number;
-  gross_millions: number;
-  week_start_date: string | null;
-};
-
-const GROSS_CUTOFF_DATE = "2026-10-01";
 
 function formatScore(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -376,49 +368,25 @@ export default async function Home() {
   const supabase = supabasePublic();
 
   const [
-    { data: standingsData, error: standingsError },
     { data: moviesData, error: moviesError },
-    { data: weeklyData, error: weeklyError },
     { data: playersData, error: playersError },
   ] =
     await Promise.all([
       supabase
-        .from("player_standings")
-        .select("*")
-        .order("total_score", { ascending: false }),
-      supabase
         .from("movies")
-        .select("id, title, release_date, opening_weekend_gross, status, poster_url")
+        .select("id, title, release_date, opening_weekend_gross, total_gross_millions, status, poster_url")
         .neq("status", "cancelled")
         .order("release_date", { ascending: true })
         .order("title", { ascending: true }),
-      supabase
-        .from("weekly_grosses")
-        .select("movie_id, week_number, gross_millions, week_start_date"),
       supabase.from("players").select("id, name"),
     ]);
 
-  if (standingsError) {
-    throw new Error(`Failed to load standings: ${standingsError.message}`);
-  }
   if (moviesError) {
     throw new Error(`Failed to load movies: ${moviesError.message}`);
-  }
-  if (weeklyError) {
-    throw new Error(`Failed to load weekly grosses: ${weeklyError.message}`);
   }
   if (playersError) {
     throw new Error(`Failed to load players: ${playersError.message}`);
   }
-
-  const standings = ((standingsData ?? []) as Record<string, unknown>[]).map((row) => ({
-    player_id: String(row.player_id ?? ""),
-    player_name: String(row.player_name ?? row.name ?? "Unknown player"),
-    total_score: Number(row.total_score ?? 0),
-  })) as StandingRow[];
-  const standingsByPlayerId = new Map(
-    standings.map((row) => [row.player_id, row] as const)
-  );
 
   const movies = (moviesData ?? []) as MovieRow[];
   const players = (playersData ?? []) as { id: string; name: string | null }[];
@@ -426,27 +394,9 @@ export default async function Home() {
     (a.name ?? "").localeCompare(b.name ?? "", "en-US")
   );
 
-  const weeklyByMovie = new Map<string, WeeklyGrossRow[]>();
-  for (const row of (weeklyData ?? []) as WeeklyGrossRow[]) {
-    const existing = weeklyByMovie.get(row.movie_id) ?? [];
-    existing.push(row);
-    weeklyByMovie.set(row.movie_id, existing);
-  }
-
   const movieTotals = new Map<string, number | null>();
   for (const movie of movies) {
-    const rows = weeklyByMovie.get(movie.id) ?? [];
-    let included = 0;
-    let sum = 0;
-    for (const row of rows) {
-      const datePrefix = row.week_start_date ? String(row.week_start_date).slice(0, 10) : null;
-      if (datePrefix && datePrefix >= GROSS_CUTOFF_DATE) {
-        continue;
-      }
-      sum += Number(row.gross_millions);
-      included += 1;
-    }
-    movieTotals.set(movie.id, included > 0 ? sum : null);
+    movieTotals.set(movie.id, movie.total_gross_millions ?? null);
   }
 
   const picksWithMoviesResult = await supabase
@@ -462,6 +412,28 @@ export default async function Home() {
     existing.push(pick);
     picksByPlayer.set(pick.player_id, existing);
   }
+
+  const standings: StandingRow[] = players.map((player) => {
+    const playerPicks = picksByPlayer.get(player.id) ?? [];
+    const ranked = playerPicks.filter((pick) => !pick.is_alternate && pick.rank !== null);
+    let totalScore = 0;
+    for (const pick of ranked) {
+      const gross = movieTotals.get(pick.movie_id) ?? null;
+      if (gross !== null) {
+        const multiplier = 16 - (pick.rank as number);
+        totalScore += gross * multiplier;
+      }
+    }
+    return {
+      player_id: String(player.id),
+      player_name: (player.name ?? "Unknown player").trim(),
+      total_score: Math.round(totalScore * 100) / 100,
+    };
+  }).sort((a, b) => b.total_score - a.total_score);
+
+  const standingsByPlayerId = new Map(
+    standings.map((row) => [row.player_id, row] as const)
+  );
 
   const hasAnyMovieTotals = movies.some((movie) => movieTotals.get(movie.id) !== null);
   const sortedMovies = [...movies].sort((a, b) => {
@@ -525,7 +497,7 @@ export default async function Home() {
                         {formatMillions(movie.opening_weekend_gross)}
                       </td>
                       <td className="border-t border-dodger-blue-light px-3 py-1.5 text-right tabular-nums">
-                        {formatMillions(movieTotals.get(movie.id) ?? null)}
+                        {formatMillions(movieTotals.get(movie.id) ?? movie.opening_weekend_gross ?? null)}
                       </td>
                     </tr>
                   ))}

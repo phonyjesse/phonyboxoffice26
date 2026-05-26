@@ -16,6 +16,7 @@ type WeekendCsvRow = {
   Release?: string;
   Weeks?: string;
   Gross?: string;
+  "Total Gross"?: string;
 };
 
 function normalizeTitle(value: string) {
@@ -196,21 +197,12 @@ export async function GET(request: Request) {
         let weekendMatched = 0;
         let weekendCaptured = 0;
 
+        const GROSS_CUTOFF = new Date("2026-10-01T00:00:00Z");
+        const isPastCutoff = new Date() >= GROSS_CUTOFF;
+
         for (const row of weekendParseResult.data) {
           const title = String(row.movie_title ?? row.Release ?? "").trim();
           const weekNumber = parseWeekNumber(String(row.weeks ?? row.Weeks ?? ""));
-
-          if (weekNumber !== 1) {
-            continue;
-          }
-
-          const weekendGrossMillions = parseGrossMillions(
-            String(row.weekend_gross_millions ?? row.Gross ?? "")
-          );
-          if (weekendGrossMillions === null) {
-            console.error("Skipping weekend row due to invalid gross", row);
-            continue;
-          }
 
           const movieId = movieIdByTitle.get(normalizeTitle(title));
           if (!movieId) {
@@ -220,24 +212,47 @@ export async function GET(request: Request) {
 
           weekendMatched += 1;
 
-          const { data: updatedRows, error: weekendUpdateError } = await supabase
-            .from("movies")
-            .update({ opening_weekend_gross: weekendGrossMillions })
-            .eq("id", movieId)
-            .is("opening_weekend_gross", null)
-            .select("id");
+          // Update cumulative total_gross_millions for all in-season movies
+          if (!isPastCutoff) {
+            const totalGrossMillions = parseGrossMillions(String(row["Total Gross"] ?? ""));
+            if (totalGrossMillions !== null) {
+              const { error: totalGrossError } = await supabase
+                .from("movies")
+                .update({ total_gross_millions: totalGrossMillions })
+                .eq("id", movieId);
 
-          if (weekendUpdateError) {
-            console.error("Failed to update opening weekend gross", {
-              title,
-              weekendGrossMillions,
-              error: weekendUpdateError.message,
-            });
-            continue;
+              if (totalGrossError) {
+                console.error("Failed to update total_gross_millions", {
+                  title,
+                  totalGrossMillions,
+                  error: totalGrossError.message,
+                });
+              } else {
+                weekendCaptured += 1;
+              }
+            }
           }
 
-          if ((updatedRows ?? []).length > 0) {
-            weekendCaptured += 1;
+          // Capture opening weekend gross for first-week movies only if not yet set
+          if (weekNumber === 1) {
+            const weekendGrossMillions = parseGrossMillions(
+              String(row.weekend_gross_millions ?? row.Gross ?? "")
+            );
+            if (weekendGrossMillions !== null) {
+              const { error: weekendUpdateError } = await supabase
+                .from("movies")
+                .update({ opening_weekend_gross: weekendGrossMillions })
+                .eq("id", movieId)
+                .is("opening_weekend_gross", null);
+
+              if (weekendUpdateError) {
+                console.error("Failed to update opening weekend gross", {
+                  title,
+                  weekendGrossMillions,
+                  error: weekendUpdateError.message,
+                });
+              }
+            }
           }
         }
 
