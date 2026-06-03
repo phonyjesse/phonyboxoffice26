@@ -19,39 +19,9 @@ type PickRow = {
     title: string;
     status: string | null;
     poster_url: string | null;
+    total_gross_millions: number | null;
+    opening_weekend_gross: number | null;
   } | null;
-};
-
-type WeeklyGrossRow = {
-  movie_id: string;
-  week_number: number;
-  gross_millions: number;
-  week_start_date: string | null;
-};
-
-const GROSS_CUTOFF_DATE = "2026-10-01";
-
-function sumGrossMillionsThroughCutoff(rows: WeeklyGrossRow[]): number | null {
-  let sum = 0;
-  let included = 0;
-  for (const row of rows) {
-    const datePrefix = row.week_start_date
-      ? String(row.week_start_date).slice(0, 10)
-      : null;
-    if (datePrefix && datePrefix >= GROSS_CUTOFF_DATE) {
-      continue;
-    }
-    sum += Number(row.gross_millions);
-    included += 1;
-  }
-  if (included === 0) {
-    return null;
-  }
-  return sum;
-}
-
-type StandingRow = {
-  total_score: number;
 };
 
 function statusBadge(status: string | null) {
@@ -105,26 +75,13 @@ export default async function PlayerPage({
   }
 
   const typedPlayer = player as PlayerRow;
-  const [{ data: picksData, error: picksError }, { data: standingsData, error: standingsError }] =
-    await Promise.all([
-      supabase
-        .from("picks")
-        .select("movie_id, rank, is_alternate, movies(title, status, poster_url)")
-        .eq("player_id", typedPlayer.id),
-      supabase
-        .from("player_standings")
-        .select("total_score")
-        .eq("player_id", typedPlayer.id)
-        .limit(1)
-        .maybeSingle(),
-    ]);
+  const { data: picksData, error: picksError } = await supabase
+    .from("picks")
+    .select("movie_id, rank, is_alternate, movies(title, status, poster_url, total_gross_millions, opening_weekend_gross)")
+    .eq("player_id", typedPlayer.id);
 
   if (picksError) {
     throw new Error(`Failed to load picks: ${picksError.message}`);
-  }
-
-  if (standingsError) {
-    throw new Error(`Failed to load standings: ${standingsError.message}`);
   }
 
   const picks = (picksData ?? []) as unknown as PickRow[];
@@ -132,29 +89,20 @@ export default async function PlayerPage({
     .filter((pick) => !pick.is_alternate && pick.rank !== null)
     .sort((a, b) => (a.rank as number) - (b.rank as number));
   const alternatePick = picks.find((pick) => Boolean(pick.is_alternate));
-  const movieIds = picks.map((pick) => pick.movie_id);
-
-  const { data: weeklyData, error: weeklyError } = await supabase
-    .from("weekly_grosses")
-    .select("movie_id, week_number, gross_millions, week_start_date")
-    .in("movie_id", movieIds.length > 0 ? movieIds : [""]);
-
-  if (weeklyError) {
-    throw new Error(`Failed to load weekly grosses: ${weeklyError.message}`);
-  }
-
-  const weeklyByMovie = new Map<string, WeeklyGrossRow[]>();
-  for (const row of (weeklyData ?? []) as WeeklyGrossRow[]) {
-    const existing = weeklyByMovie.get(row.movie_id) ?? [];
-    existing.push(row);
-    weeklyByMovie.set(row.movie_id, existing);
-  }
 
   const cancelledRanks = rankedPicks
     .filter((pick) => pick.movies?.status === "cancelled")
     .map((pick) => pick.rank as number);
   const activatedRank = cancelledRanks.length > 0 ? Math.min(...cancelledRanks) : null;
-  const totalScore = Number((standingsData as StandingRow | null)?.total_score ?? 0);
+
+  let totalScore = 0;
+  for (const pick of rankedPicks) {
+    const gross = pick.movies?.total_gross_millions ?? null;
+    if (gross !== null && pick.rank !== null) {
+      totalScore += gross * (16 - (pick.rank as number));
+    }
+  }
+  totalScore = Math.round(totalScore * 100) / 100;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-700">
@@ -189,8 +137,7 @@ export default async function PlayerPage({
                 {rankedPicks.map((pick) => {
                   const rank = pick.rank as number;
                   const multiplier = 16 - rank;
-                  const rows = weeklyByMovie.get(pick.movie_id) ?? [];
-                  const totalGross = sumGrossMillionsThroughCutoff(rows);
+                  const totalGross = pick.movies?.total_gross_millions ?? pick.movies?.opening_weekend_gross ?? null;
                   const score =
                     totalGross === null ? null : Math.round(totalGross * multiplier * 100) / 100;
 
