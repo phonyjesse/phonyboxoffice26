@@ -435,17 +435,10 @@ export default async function Home() {
     standings.map((row) => [row.player_id, row] as const)
   );
 
-  const hasAnyMovieTotals = movies.some((movie) => movieTotals.get(movie.id) !== null);
   const sortedMovies = [...movies].sort((a, b) => {
-    if (!hasAnyMovieTotals) {
-      return a.release_date.localeCompare(b.release_date);
-    }
-    const aTotal = movieTotals.get(a.id) ?? -1;
-    const bTotal = movieTotals.get(b.id) ?? -1;
-    if (bTotal !== aTotal) {
-      return bTotal - aTotal;
-    }
-    return a.release_date.localeCompare(b.release_date);
+    const dateCmp = a.release_date.localeCompare(b.release_date);
+    if (dateCmp !== 0) return dateCmp;
+    return a.title.localeCompare(b.title);
   });
 
   return (
