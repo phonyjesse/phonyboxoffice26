@@ -56,7 +56,7 @@ export default async function PlayerPage({
   params: Promise<{ name: string }>;
 }) {
   const { name } = await params;
-  const decodedName = decodeURIComponent(name);
+  const decodedName = decodeURIComponent(name).trim();
   const supabase = supabasePublic();
 
   const { data: player, error: playerError } = await supabase
